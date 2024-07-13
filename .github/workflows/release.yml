@@ -17,6 +17,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install jq -y
+          wget https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-1.9.3-darwin-amd64.tar.gz 
 
       - name: download resources
         id: download

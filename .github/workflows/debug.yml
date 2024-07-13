@@ -14,11 +14,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Get last sing-box tags
+        id: getsb
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sbLatestRelease = await github.rest.repos.getLatestRelease({
+              owner: 'SagerNet',
+              repo: 'sing-box',
+            });
+            core.setOutput("singbox_tag", sbLatestRelease.data.tag_name);
 
       - name: Prepare enviroment
         run: |
           sudo apt update
           sudo apt install jq -y
+          sb_version=${{ steps.getsb.outputs.singbox_tag }}
+          sb_version=$(echo $sb_version | tr -d 'v')
+          wget "https://github.com/SagerNet/sing-box/releases/download/v${sb_version}/sing-box-${sb_version}-linux-amd64.tar.gz"
+          tar -zxvf sing-box-${sb_version}-linux-amd64.tar.gz sing-box-${sb_version}-linux-amd64/sing-box
+          alias sing-box='./sing-box-${sb_version}-linux-amd64/sing-box'
 
       - name: Download resources
         run: |
