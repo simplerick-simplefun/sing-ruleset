@@ -49,7 +49,7 @@ jobs:
       - name: build
         id: build
         run: |
-          echo "tag=$(date +'%Y-%m-%dT%H:%M:%S')" >> "$GITHUB_OUTPUT"
+          echo "tag=$(date +'%Y%m%d%H%M')" >> "$GITHUB_OUTPUT"
           ip_conf=${{ steps.download.outputs.ip_conf_file }}
           site_conf=${{ steps.download.outputs.site_conf_file }}
           bash build.sh "$ip_conf" "$site_conf"
@@ -82,12 +82,17 @@ jobs:
           git branch -m release
       
       - name: GitHub Push
-        if: steps.build.outputs.skip != 'true'
+        if: steps.build.outcome == 'success'
         uses: ad-m/github-push-action@v0.8.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: release
           force: true
+      
+      - name: Purge CDN Cache
+        if: steps.build.outcome == 'success'
+        run: |
+          curl -L https://purge.jsdelivr.net/gh/simplerick-simplefun/sing-ruleset@release/ > /dev/null 2>&1
       
       - name: Release
         if: steps.build.outcome == 'success'
