@@ -5,9 +5,8 @@ cfg_ips=$1
 cfg_sites=$2
 output_dir=$3
 [ ! -f "$output_dir" ] && output_dir='.'
-[[ "$(which sing-box)" == "" ]] && alias sing-box='./sing-box'
-ll
 
+chmod u+x ./sing-box
 
 concat_rule_json()
 {
@@ -52,7 +51,7 @@ geo2rule()
   [ $? -ne 0 ] && exit 1
   for geoitem in "${geoitems[@]}"
   do
-    sing-box $geotype export "${geoitem}"
+    ./sing-box $geotype export "${geoitem}"
     [ $? -ne 0 ] && exit 1
     
     local geo_rules=$(cat "${geotype}-${geoitem}.json")
@@ -86,7 +85,7 @@ build_rule_file()
   local result=$(concat_rule_json "$geo_rules" "$other_rules")
   
   echo "${result}" > "${output_dir}/${filename}.json"
-  sing-box rule-set compile "${filename}.json"
+  ./sing-box rule-set compile "${filename}.json"
   [ "$DEBUG" == "1" ] || rm "${filename}.json"
   
   echo "${filename}.srs is built"
