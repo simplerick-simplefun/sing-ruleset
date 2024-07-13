@@ -62,8 +62,11 @@ jobs:
             *.srs
       
       - name: Push artifacts to release branch
-        if: steps.build.outputs.skip != 'true'
+        if: steps.build.outcome == 'success'
         run: |
+          mkdir dist
+          cp *.srs dist/
+          
           git config --local user.email "13503950+simplerick-simplefun@users.noreply.github.com"
           git config --local user.name "github-action[bot]"
           git fetch
@@ -71,6 +74,7 @@ jobs:
           git checkout --orphan release-orphan
           git rm -rf .
           
+          cp dist/* .
           git add *.srs
           
           git commit -am "Updated at $(date)"
@@ -78,7 +82,7 @@ jobs:
           git branch -m release
       
       - name: Release
-        if: steps.build.outputs.skip != 'true'
+        if: steps.build.outcome == 'success'
         id: release
         uses: softprops/action-gh-release@v2.0.6 
         with:
