@@ -21,16 +21,23 @@ jobs:
 
       - name: download resources
         id: download
+        env:
+          IP_CONF_LINK: ${{ secrets.SB_IP_CFG }}
+          SITE_CONF_LINK: ${{ secrets.SB_SITE_CFG }}
         run: |
           wget https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db
           wget https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db
+          echo "ip_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${IP_CONF_LINK})" >> "$GITHUB_OUTPUT"
+          echo "site_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${SITE_CONF_LINK})" >> "$GITHUB_OUTPUT"
 
 
       - name: build
         id: build
         run: |
-          bash build.sh ./config/dest_ip.json ./config/dest_sites.json
           echo "tag=$(date +'%Y-%m-%dT%H:%M:%S')" >> "$GITHUB_OUTPUT"
+          ip_conf=${{ steps.download.outputs.ip_conf_file }}
+          site_conf=${{ steps.download.outputs.site_conf_file }}
+          bash build.sh "$ip_conf" "$site_conf"
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
