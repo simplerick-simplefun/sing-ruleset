@@ -1,13 +1,13 @@
 # This is a basic workflow to help you get started with Actions
 
-name: build
+name: release
 
 on:
   workflow_dispatch:
 
 jobs:
-  name: release
   build:
+    name: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

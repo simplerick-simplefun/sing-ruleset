@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: build
+name: debug
 
 on:
   push:
@@ -9,8 +9,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  name: TestBuild
   build:
+    name: debug
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
