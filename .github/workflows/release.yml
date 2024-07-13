@@ -4,6 +4,8 @@ name: release
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "00 23 * * *"
 
 jobs:
   build:
@@ -44,7 +46,6 @@ jobs:
           wget https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db
           echo "ip_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${IP_CONF_LINK})" >> "$GITHUB_OUTPUT"
           echo "site_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${SITE_CONF_LINK})" >> "$GITHUB_OUTPUT"
-
 
       - name: build
         id: build

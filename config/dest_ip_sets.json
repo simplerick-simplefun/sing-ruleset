@@ -1,6 +1,6 @@
 [
   {
-    "tag": "dest-ip-1",
+    "tag": "ip-File1",
     "rules": {
       "geoip": [
         "cn",
@@ -13,7 +13,7 @@
     }
   },
   {
-    "tag": "dest-ip-2",
+    "tag": "ip-File2",
     "rules": {
       "geoip": [
         "us"
@@ -25,7 +25,7 @@
     }
   },
   {
-    "tag": "dest-ip-3",
+    "tag": "ip-File3",
     "rules": {
       "geoip": [
         "jp",

@@ -1,6 +1,6 @@
 [
   {
-    "tag": "dest-sites-1",
+    "tag": "sites-File1",
     "rules": {
       "geosite": [
         "google",
@@ -21,7 +21,7 @@
     }
   },
   {
-    "tag": "dest-sites-2",
+    "tag": "sites-File2",
     "rules": {
       "geosite": [
         "cn"
