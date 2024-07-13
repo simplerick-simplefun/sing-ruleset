@@ -2,35 +2,69 @@
 
 name: build
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+  name: release
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: setup enviroment
+        id: setup
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          sudo apt update
+          sudo apt install jq -y
+
+      - name: download resources
+        id: download
+        run: |
+          wget https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db
+          wget https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db
+
+
+      - name: build
+        id: build
+        run: |
+          bash build.sh ./config/dest_ip.json ./config/dest_sites.json
+          echo "tag=$(date +'%Y-%m-%dT%H:%M:%S')" >> "$GITHUB_OUTPUT"
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-build-artifacts
+          path: |
+            *.srs
+      
+      - name: Push artifacts to release branch
+        if: steps.build.outputs.skip != 'true'
+        run: |
+          git config --local user.email "13503950+simplerick-simplefun@users.noreply.github.com"
+          git config --local user.name "github-action[bot]"
+          git fetch
+          git checkout release
+          git checkout --orphan release-orphan
+          git rm -rf .
+          
+          git add *.srs
+          
+          git commit -am "Updated at $(date)"
+          git branch -D release
+          git branch -m release
+      
+      - name: Release
+        if: steps.build.outputs.skip != 'true'
+        id: release
+        uses: softprops/action-gh-release@v2.0.6 
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          append_body: false
+          fail_on_unmatched_files: true
+          name: "${{ steps.build.outputs.tag }}"
+          tag_name: "${{ steps.build.outputs.tag }}"
+          files: |
+            *.srs

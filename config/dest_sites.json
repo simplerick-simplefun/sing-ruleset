@@ -1,0 +1,37 @@
+[
+  {
+    "tag": "dest-sites-1",
+    "rules": {
+      "geosite": [
+        "google",
+        "microsoft"
+      ],
+      "domain": [
+        "test.com"
+      ],
+      "domain_suffix": [
+        "xxx.abc.cn"
+      ],
+      "domain_keyword": [
+        "test"
+      ],
+      "domain_regex": [
+        "^stun\\..+"
+      ]
+    }
+  },
+  {
+    "tag": "dest-sites-2",
+    "rules": {
+      "geosite": [
+        "cn"
+      ],
+      "domain": [
+        "testb.com"
+      ],
+      "domain_suffix": [
+        "jjj.xyz.cn"
+      ]
+    }
+  }
+]

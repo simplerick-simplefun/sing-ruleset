@@ -1,0 +1,39 @@
+# This is a basic workflow to help you get started with Actions
+
+name: build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  name: TestBuild
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare enviroment
+        run: |
+          sudo apt update
+          sudo apt install jq -y
+
+      - name: Download resources
+        run: |
+          wget https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db
+          wget https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db
+
+
+      - name: Run a multi-line script
+        run: |
+          DEBUG=1 bash build.sh ./config/dest_ip.json ./config/dest_sites.json
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-build-artifacts
+          path: |
+            *.srs
+            *.json
