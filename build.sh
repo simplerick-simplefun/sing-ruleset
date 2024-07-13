@@ -5,6 +5,7 @@ cfg_ips=$1
 cfg_sites=$2
 output_dir=$3
 [ ! -f "$output_dir" ] && output_dir='.'
+[ $(which sing-box) == "" ] && alias sing-box='./sing-box'
 
 
 concat_rule_json()
