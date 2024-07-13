@@ -12,12 +12,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: setup enviroment
-        id: setup
+      - name: Get last sing-box tags
+        id: getsb
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sbLatestRelease = await github.rest.repos.getLatestRelease({
+              owner: 'SagerNet',
+              repo: 'sing-box',
+            });
+            core.setOutput("singbox_tag", sbLatestRelease.data.tag_name);
+
+      - name: prepare enviroment
         run: |
           sudo apt update
           sudo apt install jq -y
-          wget https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-1.9.3-darwin-amd64.tar.gz 
+          sb_version=${{ steps.getsb.outputs.singbox_tag }}
+          sb_version=$(echo $sb_version | tr -d 'v')
+          wget "https://github.com/SagerNet/sing-box/releases/download/v${sb_version}/sing-box-${sb_version}-linux-amd64.tar.gz"
+          tar -zxvf sing-box-${sb_version}-linux-amd64.tar.gz sing-box-${sb_version}-linux-amd64/sing-box
+          mv sing-box-${sb_version}-linux-amd64/sing-box .
+          chmod u+x ./sing-box
 
       - name: download resources
         id: download
