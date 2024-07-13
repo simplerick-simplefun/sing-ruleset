@@ -81,6 +81,14 @@ jobs:
           git branch -D release
           git branch -m release
       
+      - name: GitHub Push
+        if: steps.build.outputs.skip != 'true'
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release
+          force: true
+      
       - name: Release
         if: steps.build.outcome == 'success'
         id: release
@@ -94,4 +102,4 @@ jobs:
           name: "${{ steps.build.outputs.tag }}"
           tag_name: "${{ steps.build.outputs.tag }}"
           files: |
-            *.srs
+            ./*.srs
