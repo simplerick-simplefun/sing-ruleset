@@ -90,7 +90,7 @@ jobs:
       - name: Purge CDN Cache
         if: steps.build.outcome == 'success'
         run: |
-          curl -L "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/ > /dev/null 2>&1
+          curl -L "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/" > /dev/null 2>&1
       
       - name: Release
         if: steps.build.outcome == 'success'
