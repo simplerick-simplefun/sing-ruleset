@@ -81,19 +81,16 @@ jobs:
           git commit -am "Updated at $(date)"
           git branch -D release
           git branch -m release
-      
-      - name: GitHub Push
-        if: steps.build.outcome == 'success'
-        uses: ad-m/github-push-action@v0.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: release
-          force: true
+          
+          git remote add myrepo "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git tag "${{ steps.build.outputs.tag }}"
+          git push myrepo "${{ steps.build.outputs.tag }}"
+          git push -f -u myrepo release
       
       - name: Purge CDN Cache
         if: steps.build.outcome == 'success'
         run: |
-          curl -L https://purge.jsdelivr.net/gh/simplerick-simplefun/sing-ruleset@release/ > /dev/null 2>&1
+          curl -L "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/ > /dev/null 2>&1
       
       - name: Release
         if: steps.build.outcome == 'success'
