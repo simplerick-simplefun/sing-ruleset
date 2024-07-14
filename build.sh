@@ -8,7 +8,7 @@ if [[ "$(which sing-box)" == '' ]]; then
   chmod u+x ./sing-box
   singbox='./sing-box'
 else
-  singbox=$()
+  singbox="$(which sing-box)"
 fi
 
 concat_rule_json()
@@ -95,10 +95,12 @@ build_rule_file()
     exit 1
   fi
   echo "building ${filename}.srs"
-  
+
   local geo_list="$(echo "$rule_cfg" | jq ".rules.${geotype}")"
-  [ $? -ne 0 ] && echo "Err: does not contain rules.${geotype} field in .json" && exit 1
+   #[ $? -ne 0 ] && >&2 echo "Err: does not contain rules.${geotype} field in .json" && exit 1
+  [ "$geo_list" == "null" ] && geo_list=''
   local geo_rules="$(geo2rule "${geotype}" "${geo_list}")"
+  #>&2 echo "DEBUG#Z"
   
   local other_rules="$(echo "$rule_cfg" | jq ".rules | del(.${geotype})")"
   other_rules="$(echo '{"version": 1,"rules": [{}]}' | jq --argjson jqnewrule "$other_rules" '.rules[0] += $jqnewrule')"
@@ -123,5 +125,16 @@ build_ruleset()
   done
 }
 
+manual_setup_sb()
+{
+  wget "https://github.com/SagerNet/sing-box/releases/download/v1.8.14/sing-box-1.8.14-linux-amd64.tar.gz"
+  tar -xvzf ./sing-box-1.8.14-linux-amd64.tar.gz
+  mv ./sing-box-1.8.14-linux-amd64/sing-box .
+  rm -rf ./sing-box-*
+  chmod u+x ./sing-box
+  singbox='./sing-box'
+}
+
+manual_setup_sb
 build_ruleset 'geoip' $cfg_ips
 build_ruleset 'geosite' $cfg_sites
