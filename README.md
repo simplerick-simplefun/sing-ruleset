@@ -4,6 +4,7 @@ Auto generated rulset source files (.srs) for sing-box
 Prerequsite:
 apt install jq
 sing-box installed or in the folder of execution
+
 Files: geosite.db geoip.db in the execution directory
 
 Usage:
