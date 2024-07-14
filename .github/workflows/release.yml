@@ -68,7 +68,7 @@ jobs:
           mkdir dist
           cp *.srs dist/
           
-          git config --local user.email "13503950+simplerick-simplefun@users.noreply.github.com"
+          git config --local user.email "${{ vars.OWNER_EMAIL }}"
           git config --local user.name "github-action[bot]"
           git fetch
           git checkout release
