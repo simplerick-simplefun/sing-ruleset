@@ -58,7 +58,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-build-artifacts
+          name: release-build-artifacts
           path: |
             *.srs
       
