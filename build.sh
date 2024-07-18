@@ -127,9 +127,10 @@ build_ruleset()
 
 manual_setup_sb()
 {
-  wget "https://github.com/SagerNet/sing-box/releases/download/v1.8.14/sing-box-1.8.14-linux-amd64.tar.gz"
-  tar -xvzf ./sing-box-1.8.14-linux-amd64.tar.gz
-  mv ./sing-box-1.8.14-linux-amd64/sing-box .
+  local singver='1.10.0-alpha.22'
+  wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
+  tar -xvzf ./sing-box-${singver}-linux-amd64.tar.gz
+  mv ./sing-box-${singver}-linux-amd64/sing-box .
   rm -rf ./sing-box-*
   chmod u+x ./sing-box
   singbox='./sing-box'
