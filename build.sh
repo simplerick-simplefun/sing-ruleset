@@ -127,7 +127,7 @@ build_ruleset()
 
 manual_setup_sb()
 {
-  local singver='1.10.0-alpha.22'
+  local singver='1.8.14'
   wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
   tar -xvzf ./sing-box-${singver}-linux-amd64.tar.gz
   mv ./sing-box-${singver}-linux-amd64/sing-box .
