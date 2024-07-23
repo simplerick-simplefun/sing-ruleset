@@ -29,12 +29,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install jq -y
-          sb_version=${{ steps.getsb.outputs.singbox_tag }}
-          sb_version=$(echo $sb_version | tr -d 'v')
-          wget "https://github.com/SagerNet/sing-box/releases/download/v${sb_version}/sing-box-${sb_version}-linux-amd64.tar.gz"
-          tar -zxvf sing-box-${sb_version}-linux-amd64.tar.gz sing-box-${sb_version}-linux-amd64/sing-box
-          mv sing-box-${sb_version}-linux-amd64/sing-box .
-          chmod u+x ./sing-box
 
       - name: download resources
         id: download

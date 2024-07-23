@@ -1,14 +1,16 @@
 #!/bin/bash
 set -e
 
+singvers=('1.8.14')
+
 cfg_ips=$1
 cfg_sites=$2
 
-if [[ "$(which sing-box)" == '' ]]; then
-  chmod u+x ./sing-box
-  singbox='./sing-box'
-else
-  singbox="$(which sing-box)"
+singbox="$(which sing-box)"
+[ "$singbox" == '' ] && [ -f './sing-box' ] && singbox='./sing-box'
+if [ "$singbox" != '' ]; then
+  sing_curver="$($singbox version | head -n 1 | cut -d ' ' -f 3)"
+  [[ "${singvers[@]}" =~ "$sing_curver" ]] || singbox=''
 fi
 
 concat_rule_json()
@@ -127,7 +129,7 @@ build_ruleset()
 
 manual_setup_sb()
 {
-  local singver='1.8.14'
+  local singver="${singvers[0]}"
   wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
   tar -xvzf ./sing-box-${singver}-linux-amd64.tar.gz
   mv ./sing-box-${singver}-linux-amd64/sing-box .
@@ -136,6 +138,6 @@ manual_setup_sb()
   singbox='./sing-box'
 }
 
-manual_setup_sb
+[ "$singbox" == '' ] && manual_setup_sb
 build_ruleset 'geoip' $cfg_ips
 build_ruleset 'geosite' $cfg_sites
