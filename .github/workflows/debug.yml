@@ -33,8 +33,8 @@ jobs:
 
       - name: Download resources
         run: |
-          wget https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db
-          wget https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db
+          wget -O 'geosite.db' 'https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db'
+          wget -O 'geoip.db' 'https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip-cn.db'
 
 
       - name: Run a multi-line script
