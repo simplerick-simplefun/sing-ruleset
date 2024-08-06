@@ -31,15 +31,29 @@ jobs:
           sudo apt update
           sudo apt install jq -y
 
-      - name: Download resources
+      - name: download resources
+        id: download
+        env:
+          IP_CONF_LINK: ${{ secrets.SB_IP_CFG }}
+          SITE_CONF_LINK: ${{ secrets.SB_SITE_CFG }}
         run: |
           wget -O 'geosite.db' 'https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db'
-          wget -O 'geoip.db' 'https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip-cn.db'
+          wget -O 'geoip.db' 'https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db'
+          
+          if [ "${IP_CONF_LINK}" == '' ] || [ "${IP_CONF_LINK}" == 'null' ] || [ "${SITE_CONF_LINK}" == '' ] || [ "${SITE_CONF_LINK}" == 'null' ]; then
+            echo "ip_conf_file='./config/dest_ip_sets.json'" >> "$GITHUB_OUTPUT"
+            echo "site_conf_filee='./config/dest_site_sets.json'" >> "$GITHUB_OUTPUT"
+          else
+            echo "ip_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${IP_CONF_LINK})" >> "$GITHUB_OUTPUT"
+            echo "site_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${SITE_CONF_LINK})" >> "$GITHUB_OUTPUT"
+          fi
 
 
       - name: Run a multi-line script
         run: |
-          DEBUG=1 bash build.sh ./config/dest_ip_sets.json ./config/dest_site_sets.json
+          ip_conf=${{ steps.download.outputs.ip_conf_file }}
+          site_conf=${{ steps.download.outputs.site_conf_file }}
+          DEBUG=1 bash build.sh "$ip_conf" "$site_conf"
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
