@@ -95,11 +95,16 @@ jobs:
           PURGE_URL: ${{ secrets.PURGE_URL }}
         run: |
           curl -L "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/" > /dev/null 2>&1
+          
+          prefix="${PURGE_URL}"
+          files=$(find . -maxdepth 1 -type f -name "*.srs" -printf "\"${prefix}%f\", ")
+          file_urls=${files%, } # Remove the trailing comma and space
+          
           curl --request POST \
             --url "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
             --header 'Content-Type: application/json' \
             --header "Authorization: Bearer ${CF_ZONE_TOKEN}" \
-            --data "{\"prefixes\": [\"${PURGE_URL}\"]}"
+            --data "{\"files\": [${file_urls}]}" \
       
       - name: Release
         if: steps.build.outcome == 'success'
