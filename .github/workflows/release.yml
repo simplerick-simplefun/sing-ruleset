@@ -105,6 +105,7 @@ jobs:
             --header 'Content-Type: application/json' \
             --header "Authorization: Bearer ${CF_ZONE_TOKEN}" \
             --data "{\"files\": [${file_urls}]}" \
+          > /dev/null 2>&1
       
       - name: Release
         if: steps.build.outcome == 'success'
