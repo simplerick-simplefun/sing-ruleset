@@ -87,6 +87,21 @@ jobs:
           git push myrepo "${{ steps.build.outputs.tag }}"
           git push -f -u myrepo release
       
+      - name: Release
+        if: steps.build.outcome == 'success'
+        id: release
+        uses: softprops/action-gh-release@v2.0.6 
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          append_body: false
+          fail_on_unmatched_files: true
+          name: "${{ steps.build.outputs.tag }}"
+          tag_name: "${{ steps.build.outputs.tag }}"
+          files: |
+            ./*.srs
+      
       - name: Purge CDN Cache
         if: steps.build.outcome == 'success'
         env:
@@ -107,17 +122,3 @@ jobs:
             --data "{\"files\": [${file_urls}]}" \
           > /dev/null 2>&1
       
-      - name: Release
-        if: steps.build.outcome == 'success'
-        id: release
-        uses: softprops/action-gh-release@v2.0.6 
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          prerelease: false
-          append_body: false
-          fail_on_unmatched_files: true
-          name: "${{ steps.build.outputs.tag }}"
-          tag_name: "${{ steps.build.outputs.tag }}"
-          files: |
-            ./*.srs
