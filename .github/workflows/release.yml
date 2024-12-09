@@ -36,8 +36,8 @@ jobs:
           IP_CONF_LINK: ${{ secrets.SB_IP_CFG }}
           SITE_CONF_LINK: ${{ secrets.SB_SITE_CFG }}
         run: |
-          wget -O 'geosite.db' 'https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db'
-          wget -O 'geoip.db' 'https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db'
+          wget -O 'geosite.db' 'https://github.com/simplerick-simplefun/sing-geosite/releases/latest/download/geosite.db' > /dev/null 2>&1
+          wget -O 'geoip.db' 'https://github.com/simplerick-simplefun/sing-geoip/releases/latest/download/geoip.db' > /dev/null 2>&1
           
           if [ "${IP_CONF_LINK}" == '' ] || [ "${IP_CONF_LINK}" == 'null' ] || [ "${SITE_CONF_LINK}" == '' ] || [ "${SITE_CONF_LINK}" == 'null' ]; then
             echo "ip_conf_file='./config/dest_ip_sets.json'" >> "$GITHUB_OUTPUT"
