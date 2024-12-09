@@ -131,7 +131,13 @@ build_ruleset()
 manual_setup_sb()
 {
   local singver="${singvers[0]}"
-  wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
+  
+  if [ "$DEBUG" == "1" ]; then
+    wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
+  else
+    wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz" > /dev/null 2>&1
+  fi
+  
   tar -xvzf ./sing-box-${singver}-linux-amd64.tar.gz
   mv ./sing-box-${singver}-linux-amd64/sing-box .
   rm -rf ./sing-box-*
