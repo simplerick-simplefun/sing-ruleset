@@ -2,6 +2,7 @@
 # set -e
 
 singvers=('1.10.3' '1.8.14')
+empty_ruleset='{"version": 2, "rules": [{}]}'
 
 cfg_ips=$1
 cfg_sites=$2
@@ -15,7 +16,7 @@ fi
 
 concat_rule_json()
 {
-  local result='{"version": 1,"rules": [{}]}'
+  local result="${empty_ruleset}"
   
   for ruleSetItem in "$@"
   do
@@ -68,7 +69,7 @@ geo2rule()
   local geotype="$1"
   #example: geolist='["cn","us","jp"]'
   local geolist="$2"
-  local result='{"version": 1,"rules": [{}]}'
+  local result="${empty_ruleset}"
   
   readarray -t geoitems < <( echo "$geolist" | jq -rc '.[]')
   [ $? -ne 0 ] && exit 1
@@ -105,7 +106,7 @@ build_rule_file()
   #>&2 echo "DEBUG#Z"
   
   local other_rules="$(echo "$rule_cfg" | jq ".rules | del(.${geotype})")"
-  other_rules="$(echo '{"version": 1,"rules": [{}]}' | jq --argjson jqnewrule "$other_rules" '.rules[0] += $jqnewrule')"
+  other_rules="$(echo "${empty_ruleset}" | jq --argjson jqnewrule "$other_rules" '.rules[0] += $jqnewrule')"
   
   local result="$(concat_rule_json "$geo_rules" "$other_rules")"
   
