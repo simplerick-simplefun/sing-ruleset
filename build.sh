@@ -1,7 +1,7 @@
 #!/bin/bash
 # set -e
 
-singvers=('1.10.0-alpha.28' '1.10.0-alpha.27' '1.10.0-alpha.26' '1.10.0-alpha.25' '1.10.0-alpha.24' '1.8.14')
+singvers=('1.10.3' '1.8.14')
 
 cfg_ips=$1
 cfg_sites=$2
