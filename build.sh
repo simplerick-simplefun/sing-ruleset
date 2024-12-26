@@ -48,7 +48,9 @@ initialize_singbox()
 
 # rule_json_addition:
 # parameters: any number of variables of json string
+# parameter form: [{"ip_cidr":[...],"domain":[],...}]
 # return result: for all the json string parameters, concatenate(add) them together and return the result string
+# result form: '{"version": 2, "rules": [{"ip_cidr":[...],"domain":[],...}]}'
 rule_json_addition()
 {
   local result="${empty_ruleset}"
@@ -65,8 +67,9 @@ rule_json_addition()
     
     #*NOTE #2:
     # We do not use jq --jsonargs here because our json rule can be too long/big,
-    # and --jsonargs/--args could not handle it.
-    # Therefore we output our json rule to a file, and use --slurpfile to read it.
+    # and --jsonargs/--args could not handle such load.
+    # We use --slurpfile instead, which is able to handle big load of data.
+    # --slurpfile works with an input string and a json file, so we output json rule to a file for it.
     
     #*NOTE #3:
     # Using jq to add(+=) 2 items which contains the same key,
@@ -102,26 +105,27 @@ rule_json_addition()
 # parameters: two variables of json string, $1 and $2
 # return result: subtract(filter out) the content of second json($2) from first json($1), and return the rest of the first json
 # in heuristic terms, $result = $1 - $2
+# parameter & result form: '{"version": 2, "rules": [{"ip_cidr":[...],"domain":[],...}]}'
 rule_json_subtraction()
 {
   #*NOTE #1#2#3: see NOTEs in rule_json_addition()
-  local result="$1"
+  local result="$(echo "$1" | jq '.' | jq 'with_entries(if .value | type == "string" then .value |= [.] else . end)')"
   local temprule_file="temp.json"
-  echo "$2" | jq '.rules[0]' | jq 'with_entries(if .value | type == "string" then .value |= [.] else . end)' > "$temprule_file"
+  echo "$2" | jq '.' | jq 'with_entries(if .value | type == "string" then .value |= [.] else . end)' > "$temprule_file"
   
-  if $(jq 'has("ip_cidr")' "$temprule_file"); then
+  if $(jq '(.rules[0]? | has("ip_cidr"))' "$temprule_file"); then
     result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].ip_cidr |= map(select(. as $d | $jqnewrule[0].rules[0].ip_cidr | index($d) | not))')"
   fi
-  if $(jq 'has("domain")' "$temprule_file"); then
+  if $(jq '(.rules[0]? | has("domain"))' "$temprule_file"); then
     result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain |= map(select(. as $d | $jqnewrule[0].rules[0].domain | index($d) | not))')"
   fi
-  if $(jq 'has("domain_suffix")' "$temprule_file"); then
+  if $(jq '(.rules[0]? | has("domain_suffix"))' "$temprule_file"); then
     result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_suffix |= map(select(. as $d | $jqnewrule[0].rules[0].domain_suffix | index($d) | not))')"
   fi
-  if $(jq 'has("domain_keyword")' "$temprule_file"); then
+  if $(jq '(.rules[0]? | has("domain_keyword"))' "$temprule_file"); then
     result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_keyword |= map(select(. as $d | $jqnewrule[0].rules[0].domain_keyword | index($d) | not))')"
   fi
-  if $(jq 'has("domain_regex")' "$temprule_file"); then
+  if $(jq '(.rules[0]? | has("domain_regex"))' "$temprule_file"); then
     result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_regex |= map(select(. as $d | $jqnewrule[0].rules[0].domain_regex | index($d) | not))')"
   fi
     
@@ -216,14 +220,20 @@ create_customized_ruleset()
   # custom_ruleset #1
   custom_ruleset='!cn_filter^microsoft'
   
-  [ ! -f './geosite_geolocation-!cn.json' ] && build_rule_file 'geosite' 'geolocation-!cn' 'json'
-  [ ! -f './geosite_microsoft.json' ] && build_rule_file 'geosite' 'microsoft' 'json'
-  result="$(rule_json_subtraction "$geo_rules" "$other_rules")"
+  local cfg_geonocn='{"tag": "geosite_geolocation-!cn", "rules": {"geosite": ["geolocation-!cn"]}}'
+  local cfg_microsoft='{"tag": "geosite_microsoft", "rules": {"geosite": ["microsoft"]}}'
+  [ ! -f './geosite_geolocation-!cn.json' ] && build_rule_file 'geosite' "$cfg_geonocn" 'json'
+  [ ! -f './geosite_microsoft.json' ] && build_rule_file 'geosite' "$cfg_microsoft" 'json'
+  
+  local rule_geonocn="$(cat ./'geosite_geolocation-!cn.json')"
+  local rule_microsoft="$(cat ./'geosite_microsoft.json')"
+  result="$(rule_json_subtraction "$rule_geonocn" "$rule_microsoft")"
   echo "${result}" > "./geosite-${custom_ruleset}.json"
   
   $singbox rule-set compile "./geosite-${custom_ruleset}.json"
-  [ -f "./geosite-${custom_ruleset}.srs" ] && echo "./geosite-${custom_ruleset}.srs is built"
-  rm "./geosite-${custom_ruleset}.json"
+  [ -f "./geosite-${custom_ruleset}.srs" ] && echo "geosite-${custom_ruleset}.srs is built"
+  [ "$DEBUG" == "1" ] || rm "./geosite-${custom_ruleset}.json"
+
   
   # custom_ruleset #2
   # custom_ruleset #3
@@ -234,7 +244,5 @@ create_customized_ruleset()
 initialize_singbox
 build_ruleset 'geoip' $cfg_ips
 build_ruleset 'geosite' $cfg_sites
-[ "$DEBUG" == "1" ] || create_customized_ruleset
+create_customized_ruleset
 
-# cleanup if not in debug mode
-[ "$DEBUG" == "1" ] || rm ".\*.json"
