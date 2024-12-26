@@ -8,7 +8,7 @@ cfg_sites=$2
 #singvers: to avoid bugs in latest release of sing-box, only use the versions we verified to work
 singvers=('1.10.5' '1.10.3' '1.8.14')
 empty_ruleset='{"version": 2, "rules": [{}]}'
-custom_ruleset_resc=('geolocation-!cn' 'microsoft')
+custom_ruleset_resc=('geolocation-!cn' 'microsoft' 'sites2-new_direct')
 singbox=''
 
 
@@ -214,8 +214,8 @@ build_ruleset()
 
 build_filtered_ruleset()
 {
-  ruletag1="geosite_${1}"
-  ruletag2="geosite_${2}"
+  [[ "${1}" == "site"* ]] && ruletag1="${1}" || ruletag1="geosite_${1}"
+  [[ "${2}" == "site"* ]] && ruletag2="${2}" || ruletag2="geosite_${2}"
   ruletag_result="geosite_${3}"
   
   if [ ! -f "${ruletag1}.json" ]; then
@@ -245,8 +245,13 @@ create_customized_ruleset()
   build_filtered_ruleset 'geolocation-!cn' 'microsoft' "${custom_ruleset1}"
   $singbox rule-set compile "geosite_${custom_ruleset1}.json"
 
-  
   # custom_ruleset #2
+  custom_ruleset2='cn_filter~google-cn'
+  build_filtered_ruleset 'sites2-new_direct' 'google-cn' "${custom_ruleset2}"
+  $singbox rule-set compile "geosite_${custom_ruleset2}.json"
+  rm "sites2-new_direct.json"
+  mv "geosite_${custom_ruleset2}.json" "sites2-new_direct.json"
+  
   # custom_ruleset #3
 }
 
