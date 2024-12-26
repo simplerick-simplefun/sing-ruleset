@@ -8,7 +8,7 @@ cfg_sites=$2
 #singvers: to avoid bugs in latest release of sing-box, only use the versions we verified to work
 singvers=('1.10.5' '1.10.3' '1.8.14')
 empty_ruleset='{"version": 2, "rules": [{}]}'
-custom_ruleset_resc=('geolocation-!cn')
+custom_ruleset_resc=('geolocation-!cn' 'microsoft')
 singbox=''
 
 
