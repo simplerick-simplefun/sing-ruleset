@@ -233,7 +233,6 @@ build_filtered_ruleset()
   rule2="$(cat "${ruletag2}.json")"
   rule_json_subtraction "$rule1" "$rule2" > "${ruletag_result}.json"
   [ -f "${ruletag_result}.srs" ] && echo "${ruletag_result}.srs is built"
-  [ "$DEBUG" == "1" ] || rm "${ruletag_result}.json"
 }
 
 create_customized_ruleset()
