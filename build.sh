@@ -235,7 +235,7 @@ build_filtered_ruleset()
   [ -f "${ruletag_result}.json" ] && echo "${ruletag_result}.json is built"
 }
 
-create_customized_ruleset()
+build_customized_ruleset()
 {
   local custom_ruleset=''
   local result=''
@@ -264,5 +264,5 @@ create_customized_ruleset()
 initialize_singbox
 build_ruleset 'geoip' $cfg_ips
 build_ruleset 'geosite' $cfg_sites
-create_customized_ruleset
+build_customized_ruleset
 
