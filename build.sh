@@ -241,7 +241,7 @@ create_customized_ruleset()
   local result=''
   
   # custom_ruleset #1
-  custom_ruleset1='!cn_filter^microsoft'
+  custom_ruleset1='!cn_filter~microsoft'
   build_filtered_ruleset 'geolocation-!cn' 'microsoft' "${custom_ruleset1}"
   $singbox rule-set compile "geosite_${custom_ruleset1}.json"
 
