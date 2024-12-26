@@ -212,10 +212,11 @@ build_ruleset()
   done
 }
 
-filter_ruleset()
+build_filtered_ruleset()
 {
   ruletag1="geosite_${1}"
   ruletag2="geosite_${2}"
+  ruletag_result="geosite_${3}"
   
   if [ ! -f "${ruletag1}.json" ]; then
     local cfg1="{\"tag\": \"${ruletag1}\", \"rules\": {\"geosite\": [\"${1}\"]}}"
@@ -226,9 +227,13 @@ filter_ruleset()
     build_rule_file 'geosite' "$cfg2" 'json'
   fi
   
+  
+  echo "building ${ruletag_result}.srs"
   rule1="$(cat "${ruletag1}.json")"
   rule2="$(cat "${ruletag2}.json")"
-  echo "$(rule_json_subtraction "$rule1" "$rule2")"
+  rule_json_subtraction "$rule1" "$rule2" > "${ruletag_result}.json"
+  [ -f "${ruletag_result}.srs" ] && echo "${ruletag_result}.srs is built"
+  [ "$DEBUG" == "1" ] || rm "${ruletag_result}.json"
 }
 
 create_customized_ruleset()
@@ -238,12 +243,8 @@ create_customized_ruleset()
   
   # custom_ruleset #1
   custom_ruleset1='!cn_filter^microsoft'
-  custom_rulename1="geosite_${custom_ruleset1}"
-  
-  filter_ruleset 'geolocation-!cn' 'microsoft' > "${custom_rulename1}.json"
-  $singbox rule-set compile "${custom_rulename1}.json"
-  [ -f "${custom_rulename1}.srs" ] && echo "${custom_rulename1}.srs is built"
-  [ "$DEBUG" == "1" ] || rm "${custom_rulename1}.json"
+  build_filtered_ruleset 'geolocation-!cn' 'microsoft' "${custom_ruleset1}"
+  $singbox rule-set compile "geosite_${custom_rulename1}.json"
 
   
   # custom_ruleset #2
