@@ -246,11 +246,11 @@ create_customized_ruleset()
   $singbox rule-set compile "geosite_${custom_ruleset1}.json"
 
   # custom_ruleset #2
-  custom_ruleset2='cn_filter~google-cn'
+  custom_ruleset2='direct_filter~google-cn'
   build_filtered_ruleset 'sites2-new_direct' 'google-cn' "${custom_ruleset2}"
   $singbox rule-set compile "geosite_${custom_ruleset2}.json"
-  rm "sites2-new_direct.json"
-  mv "geosite_${custom_ruleset2}.json" "sites2-new_direct.json"
+  rm "sites2-new_direct.srs"
+  mv "geosite_${custom_ruleset2}.srs" "sites2-new_direct.srs"
   
   # custom_ruleset #3
 }
