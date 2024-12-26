@@ -226,8 +226,8 @@ filter_ruleset()
     build_rule_file 'geosite' "$cfg2" 'json'
   fi
   
-  rule1="$(echo "${ruletag1}.json")"
-  rule2="$(echo "${ruletag2}.json")"
+  rule1="$(cat "${ruletag1}.json")"
+  rule2="$(cat "${ruletag2}.json")"
   echo "$(rule_json_subtraction "$rule1" "$rule2")"
 }
 
