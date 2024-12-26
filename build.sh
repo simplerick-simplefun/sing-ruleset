@@ -241,11 +241,15 @@ create_customized_ruleset()
   local result=''
   
   # custom_ruleset #1
+  # removes geosite:microsoft from geosite:geolocation-!cn
+  # creates a new ruleset [geosite_!cn_filter~microsoft.srs] as result
   custom_ruleset1='!cn_filter~microsoft'
   build_filtered_ruleset 'geolocation-!cn' 'microsoft' "${custom_ruleset1}"
   $singbox rule-set compile "geosite_${custom_ruleset1}.json"
 
   # custom_ruleset #2
+  # removes geosite:google-cn from sites2-new_direct(->contains geosite:cn ->contains geosite:google-cn)
+  # changes the result to be the new&modified [sites2-new_direct.srs]
   custom_ruleset2='direct_filter~google-cn'
   build_filtered_ruleset 'sites2-new_direct' 'google-cn' "${custom_ruleset2}"
   $singbox rule-set compile "geosite_${custom_ruleset2}.json"
