@@ -1,20 +1,55 @@
 #!/bin/bash
 # set -e
 
-singvers=('1.10.3' '1.8.14')
-empty_ruleset='{"version": 2, "rules": [{}]}'
 
 cfg_ips=$1
 cfg_sites=$2
 
-singbox="$(which sing-box)"
-[ "$singbox" == '' ] && [ -f './sing-box' ] && singbox='./sing-box'
-if [ "$singbox" != '' ]; then
-  sing_curver="$($singbox version | head -n 1 | cut -d ' ' -f 3)"
-  [[ "${singvers[@]}" =~ "$sing_curver" ]] || singbox=''
-fi
+#singvers: to avoid bugs in latest release of sing-box, only use the versions we verified to work
+singvers=('1.10.5' '1.10.3' '1.8.14')
+empty_ruleset='{"version": 2, "rules": [{}]}'
+custom_ruleset_resc=('geolocation-!cn')
+singbox=''
 
-concat_rule_json()
+
+
+download_singbox()
+{
+  local singver="${singvers[0]}"
+  
+  if [ "$DEBUG" == "1" ]; then
+    wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
+  else
+    wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz" > /dev/null 2>&1
+  fi
+  
+  tar -xvzf ./sing-box-${singver}-linux-amd64.tar.gz
+  mv ./sing-box-${singver}-linux-amd64/sing-box .
+  rm -rf ./sing-box-*
+}
+
+initialize_singbox()
+{
+  singbox="$(which sing-box)"
+  [ "$singbox" == '' ] && [ -f './sing-box' ] && singbox='./sing-box'
+  if [ "$singbox" != '' ]; then
+    local sing_curver="$($singbox version | head -n 1 | cut -d ' ' -f 3)"
+    [[ "${singvers[@]}" =~ "$sing_curver" ]] || singbox=''
+  fi
+  if [ "$singbox" == '' ]; then
+    download_singbox
+    chmod u+x ./sing-box
+    singbox='./sing-box'
+  fi
+}
+
+
+
+
+# rule_json_addition:
+# parameters: any number of variables of json string
+# return result: for all the json string parameters, concatenate(add) them together and return the result string
+rule_json_addition()
 {
   local result="${empty_ruleset}"
   
@@ -38,28 +73,59 @@ concat_rule_json()
     # will result in value of that key in item 2 replacing instead of adding to that value in item 1
     # Thus we need to add the values of those same keys, instead of add the parent level items
     
-    local newrule_file="temp.json"
-    echo "$ruleSetItem" | jq '.rules[0]' | jq 'with_entries(if .value | type == "string" then .value |= [.] else . end)' > "$newrule_file"
+    local temprule_file="temp.json"
+    echo "$ruleSetItem" | jq '.rules[0]' | jq 'with_entries(if .value | type == "string" then .value |= [.] else . end)' > "$temprule_file"
     
-    if $(jq 'has("ip_cidr")' "$newrule_file"); then
-      result="$(echo "$result" | jq --slurpfile jqnewrule "$newrule_file" '.rules[0].ip_cidr += $jqnewrule[0].ip_cidr')"
+    if $(jq 'has("ip_cidr")' "$temprule_file"); then
+      result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].ip_cidr += $jqnewrule[0].ip_cidr')"
     fi
-    if $(jq 'has("domain")' "$newrule_file"); then
-      result="$(echo "$result" | jq --slurpfile jqnewrule "$newrule_file" '.rules[0].domain += $jqnewrule[0].domain')"
+    if $(jq 'has("domain")' "$temprule_file"); then
+      result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain += $jqnewrule[0].domain')"
     fi
-    if $(jq 'has("domain_suffix")' "$newrule_file"); then
-      result="$(echo "$result" | jq --slurpfile jqnewrule "$newrule_file" '.rules[0].domain_suffix += $jqnewrule[0].domain_suffix')"
+    if $(jq 'has("domain_suffix")' "$temprule_file"); then
+      result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_suffix += $jqnewrule[0].domain_suffix')"
     fi
-    if $(jq 'has("domain_keyword")' "$newrule_file"); then
-      result="$(echo "$result" | jq --slurpfile jqnewrule "$newrule_file" '.rules[0].domain_keyword += $jqnewrule[0].domain_keyword')"
+    if $(jq 'has("domain_keyword")' "$temprule_file"); then
+      result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_keyword += $jqnewrule[0].domain_keyword')"
     fi
-    if $(jq 'has("domain_regex")' "$newrule_file"); then
-      result="$(echo "$result" | jq --slurpfile jqnewrule "$newrule_file" '.rules[0].domain_regex += $jqnewrule[0].domain_regex')"
+    if $(jq 'has("domain_regex")' "$temprule_file"); then
+      result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_regex += $jqnewrule[0].domain_regex')"
     fi
     
-    rm "$newrule_file"
+    rm "$temprule_file"
   done
   
+  echo $result
+}
+
+# rule_json_subtraction:
+# parameters: two variables of json string, $1 and $2
+# return result: subtract(filter out) the content of second json($2) from first json($1), and return the rest of the first json
+# in heuristic terms, $result = $1 - $2
+rule_json_subtraction()
+{
+  #*NOTE #1#2#3: see NOTEs in rule_json_addition()
+  local result="$1"
+  local temprule_file="temp.json"
+  echo "$2" | jq '.rules[0]' | jq 'with_entries(if .value | type == "string" then .value |= [.] else . end)' > "$temprule_file"
+  
+  if $(jq 'has("ip_cidr")' "$temprule_file"); then
+    result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].ip_cidr |= map(select(. as $d | $jqnewrule[0].rules[0].ip_cidr | index($d) | not))')"
+  fi
+  if $(jq 'has("domain")' "$temprule_file"); then
+    result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain |= map(select(. as $d | $jqnewrule[0].rules[0].domain | index($d) | not))')"
+  fi
+  if $(jq 'has("domain_suffix")' "$temprule_file"); then
+    result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_suffix |= map(select(. as $d | $jqnewrule[0].rules[0].domain_suffix | index($d) | not))')"
+  fi
+  if $(jq 'has("domain_keyword")' "$temprule_file"); then
+    result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_keyword |= map(select(. as $d | $jqnewrule[0].rules[0].domain_keyword | index($d) | not))')"
+  fi
+  if $(jq 'has("domain_regex")' "$temprule_file"); then
+    result="$(echo "$result" | jq --slurpfile jqnewrule "$temprule_file" '.rules[0].domain_regex |= map(select(. as $d | $jqnewrule[0].rules[0].domain_regex | index($d) | not))')"
+  fi
+    
+  rm "$temprule_file"
   echo $result
 }
 
@@ -80,7 +146,7 @@ geo2rule()
     
     local geo_rules="$(cat "${geotype}-${geoitem}.json")"
     
-    result="$(concat_rule_json "$result" "$geo_rules")"
+    result="$(rule_json_addition "$result" "$geo_rules")"
     rm "${geotype}-${geoitem}.json"
   done
   
@@ -91,6 +157,14 @@ build_rule_file()
 {
   local geotype="$1"
   local rule_cfg="$2"
+  #mode: ['dryrun'|'srs'|'json'|'both']
+  local mode='$3'
+  
+  [ "$mode" == "" ] && mode='srs'
+  if [ "$mode" == "srs" ]; then
+    [ "$DEBUG" == "1" ] || [[ "${custom_ruleset_resc[@]}" =~ "$rule_cfg" ]] && mode='both'
+  fi
+  
   
   local filename="$(echo "$rule_cfg" | jq -r '.tag')"
   if [ "$filename" == "null" ]; then
@@ -108,13 +182,19 @@ build_rule_file()
   local other_rules="$(echo "$rule_cfg" | jq ".rules | del(.${geotype})")"
   other_rules="$(echo "${empty_ruleset}" | jq --argjson jqnewrule "$other_rules" '.rules[0] += $jqnewrule')"
   
-  local result="$(concat_rule_json "$geo_rules" "$other_rules")"
+  local result="$(rule_json_addition "$geo_rules" "$other_rules")"
   
-  echo "${result}" > "./${filename}.json"
-  $singbox rule-set compile "${filename}.json"
-  [ "$DEBUG" == "1" ] || rm "${filename}.json"
   
-  echo "${filename}.srs is built"
+  if [ "$mode" != 'dryrun' ]; then
+    echo "${result}" > "./${filename}.json"
+    [ "$mode" != 'json' ] && $singbox rule-set compile "${filename}.json"
+    [ "$mode" == 'srs' ] && rm "${filename}.json"
+    
+    [ -f "./${filename}.json" ] && echo "${filename}.json is built"
+    [ -f "./${filename}.srs" ] && echo "${filename}.srs is built"
+  elif [ "$mode" == 'dryrun' ]; then
+    echo $result
+  fi
 }
 
 build_ruleset()
@@ -128,23 +208,33 @@ build_ruleset()
   done
 }
 
-manual_setup_sb()
+create_customized_ruleset()
 {
-  local singver="${singvers[0]}"
+  local custom_ruleset=''
+  local result=''
   
-  if [ "$DEBUG" == "1" ]; then
-    wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz"
-  else
-    wget "https://github.com/SagerNet/sing-box/releases/download/v${singver}/sing-box-${singver}-linux-amd64.tar.gz" > /dev/null 2>&1
-  fi
+  # custom_ruleset #1
+  custom_ruleset='!cn_filter^microsoft'
   
-  tar -xvzf ./sing-box-${singver}-linux-amd64.tar.gz
-  mv ./sing-box-${singver}-linux-amd64/sing-box .
-  rm -rf ./sing-box-*
-  chmod u+x ./sing-box
-  singbox='./sing-box'
+  [ ! -f './geosite_geolocation-!cn.json' ] && build_rule_file 'geosite' 'geolocation-!cn' 'json'
+  [ ! -f './geosite_microsoft.json' ] && build_rule_file 'geosite' 'microsoft' 'json'
+  result="$(rule_json_subtraction "$geo_rules" "$other_rules")"
+  echo "${result}" > "./geosite-${custom_ruleset}.json"
+  
+  $singbox rule-set compile "./geosite-${custom_ruleset}.json"
+  [ -f "./geosite-${custom_ruleset}.srs" ] && echo "./geosite-${custom_ruleset}.srs is built"
+  rm "./geosite-${custom_ruleset}.json"
+  
+  # custom_ruleset #2
+  # custom_ruleset #3
 }
 
-[ "$singbox" == '' ] && manual_setup_sb
+
+
+initialize_singbox
 build_ruleset 'geoip' $cfg_ips
 build_ruleset 'geosite' $cfg_sites
+[ "$DEBUG" == "1" ] || create_customized_ruleset
+
+# cleanup if not in debug mode
+[ "$DEBUG" == "1" ] || rm ".\*.json"
