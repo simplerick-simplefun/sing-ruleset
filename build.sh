@@ -212,27 +212,38 @@ build_ruleset()
   done
 }
 
+filter_ruleset()
+{
+  ruletag1="geosite_${1}"
+  ruletag2="geosite_${2}"
+  
+  if [ ! -f "${ruletag1}.json" ]; then
+    local cfg1="{\"tag\": \"${ruletag1}\", \"rules\": {\"geosite\": [\"${1}\"]}}"
+    build_rule_file 'geosite' "$cfg1" 'json'
+  fi
+  if [ ! -f "${ruletag2}.json" ]; then
+    local cfg2="{\"tag\": \"${ruletag2}\", \"rules\": {\"geosite\": [\"${2}\"]}}"
+    build_rule_file 'geosite' "$cfg2" 'json'
+  fi
+  
+  rule1="$(echo "${ruletag1}.json")"
+  rule2="$(echo "${ruletag2}.json")"
+  echo "$(rule_json_subtraction "$rule1" "$rule2")"
+}
+
 create_customized_ruleset()
 {
   local custom_ruleset=''
   local result=''
   
   # custom_ruleset #1
-  custom_ruleset='!cn_filter^microsoft'
+  custom_ruleset1='!cn_filter^microsoft'
+  custom_rulename1="geosite_${custom_ruleset1}"
   
-  local cfg_geonocn='{"tag": "geosite_geolocation-!cn", "rules": {"geosite": ["geolocation-!cn"]}}'
-  local cfg_microsoft='{"tag": "geosite_microsoft", "rules": {"geosite": ["microsoft"]}}'
-  [ ! -f './geosite_geolocation-!cn.json' ] && build_rule_file 'geosite' "$cfg_geonocn" 'json'
-  [ ! -f './geosite_microsoft.json' ] && build_rule_file 'geosite' "$cfg_microsoft" 'json'
-  
-  local rule_geonocn="$(cat ./'geosite_geolocation-!cn.json')"
-  local rule_microsoft="$(cat ./'geosite_microsoft.json')"
-  result="$(rule_json_subtraction "$rule_geonocn" "$rule_microsoft")"
-  echo "${result}" > "./geosite-${custom_ruleset}.json"
-  
-  $singbox rule-set compile "./geosite-${custom_ruleset}.json"
-  [ -f "./geosite-${custom_ruleset}.srs" ] && echo "geosite-${custom_ruleset}.srs is built"
-  [ "$DEBUG" == "1" ] || rm "./geosite-${custom_ruleset}.json"
+  filter_ruleset 'geolocation-!cn' 'microsoft' > "${custom_rulename1}.json"
+  $singbox rule-set compile "${custom_rulename1}.json"
+  [ -f "${custom_rulename1}.srs" ] && echo "${custom_rulename1}.srs is built"
+  [ "$DEBUG" == "1" ] || rm "${custom_rulename1}.json"
 
   
   # custom_ruleset #2
