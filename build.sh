@@ -174,7 +174,7 @@ build_rule_file()
     echo "ip json file format wrong: no tag/filename" >&2
     exit 1
   fi
-  [ "$DEBUG" == "1" ] && echo "building ${filename}.srs"
+  [ "$DEBUG" == "1" ] && echo "building ${filename} in mode: ${mode}"
 
   local geo_list="$(echo "$rule_cfg" | jq ".rules.${geotype}")"
    #[ $? -ne 0 ] && >&2 echo "Err: does not contain rules.${geotype} field in .json" && exit 1
@@ -189,7 +189,7 @@ build_rule_file()
   
   if [ "$mode" == 'dryrun' ]; then
     echo $result
-  elif [ "$mode" != 'dryrun' ]; then
+  else
     echo "${result}" > "./${filename}.json"
     if [ ! -s "./${filename}.json" ]; then
       echo "build ${filename}.json failed" >&2
@@ -197,7 +197,7 @@ build_rule_file()
       echo "${filename}.json is built"
     fi
     
-    if [ "$mode" == 'srs' ]; then
+    if [ "$mode" == "srs" ]; then
       [ "$DEBUG" == "1" ] && echo "building ${filename}.srs"
       $singbox rule-set compile "${filename}.json"
       [ -s "./${filename}.srs" ] && echo "${filename}.srs is built" || echo "build ${filename}.srs failed" >&2
@@ -231,7 +231,7 @@ build_filtered_ruleset()
     build_rule_file 'geosite' "$cfg2" 'json'
   fi
   
-  echo "building ${ruletag_result}.srs"
+  echo "building ${ruletag_result}.json"
   rule1="$(cat "${ruletag1}.json")"
   rule2="$(cat "${ruletag2}.json")"
   rule_json_subtraction "$rule1" "$rule2" > "${ruletag_result}.json"
