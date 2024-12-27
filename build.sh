@@ -45,6 +45,7 @@ initialize_singbox()
 
 
 
+## TODO: try "sing-box merge" from sing-box 1.11.0
 
 # rule_json_addition:
 # parameters: any number of variables of json string
@@ -240,6 +241,7 @@ build_filtered_ruleset()
 build_customized_ruleset()
 {
 ## TODO: optimize rule-sets, by removing contents already checked
+## TODO: merge geosite:category-ads with AdGuard rules (sing-box convert AdGuard.rule)
 << TEMP
   # custom_ruleset #1
   # removes geosite:microsoft from geosite:geolocation-!cn
