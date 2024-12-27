@@ -165,7 +165,7 @@ build_rule_file()
   local geotype="$1"
   local rule_cfg="$2"
   #mode: ['dryrun'|'json'|'srs']
-  local mode='$3'
+  local mode="$3"
   [ "$mode" == '' ] && mode='srs'
   
   
