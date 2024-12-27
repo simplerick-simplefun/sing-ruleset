@@ -216,6 +216,9 @@ build_ruleset()
   done
 }
 
+## TODO: for geosite:cn, use original v2fly/domain-list-community version, instead of loyalsoldier version
+## loyalsoldier's geosite:cn adds google-cn and apple-cn on top of original version
+## official sing-box geosite.db is made from v2fly/domain-list-community, link: https://github.com/SagerNet/sing-geosite/
 build_filtered_ruleset()
 {
   [[ "${1}" == "site"* ]] && ruletag1="${1}" || ruletag1="geosite_${1}"
@@ -241,7 +244,6 @@ build_filtered_ruleset()
 build_customized_ruleset()
 {
 ## TODO: optimize rule-sets, by removing contents already checked
-## TODO: merge geosite:category-ads with AdGuard rules (sing-box convert AdGuard.rule)
 << TEMP
   # custom_ruleset #1
   # removes geosite:microsoft from geosite:geolocation-!cn
