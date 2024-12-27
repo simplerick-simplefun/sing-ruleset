@@ -6,7 +6,7 @@ cfg_ips=$1
 cfg_sites=$2
 
 #singvers: to avoid bugs in latest release of sing-box, only use the versions we verified to work
-singvers=('1.10.5' '1.10.3' '1.8.14')
+singvers=('1.10.5' '1.10.3')
 empty_ruleset='{"version": 2, "rules": [{}]}'
 custom_ruleset_resc=('geolocation-!cn' 'microsoft' 'sites2-new_direct')
 singbox=''
@@ -31,7 +31,7 @@ download_singbox()
 initialize_singbox()
 {
   singbox="$(which sing-box)"
-  [ "$singbox" == '' ] && [ -f './sing-box' ] && singbox='./sing-box'
+  [ "$singbox" == '' ] && [ -s './sing-box' ] && singbox='./sing-box'
   if [ "$singbox" != '' ]; then
     local sing_curver="$($singbox version | head -n 1 | cut -d ' ' -f 3)"
     [[ "${singvers[@]}" =~ "$sing_curver" ]] || singbox=''
@@ -142,16 +142,18 @@ geo2rule()
   local result="${empty_ruleset}"
   
   readarray -t geoitems < <( echo "$geolist" | jq -rc '.[]')
-  [ $? -ne 0 ] && exit 1
+  [ $? -ne 0 ] && echo "Error reading listed items: ${geotype}-${geolist}" >&2 && exit 1
   for geoitem in "${geoitems[@]}"
   do
-    $singbox $geotype export "${geoitem}"
+    # re-use ${geotype}-${geoitem} if already exist
+    [ -s "${geotype}-${geoitem}.json" ] || $singbox $geotype export "${geoitem}"
     [ $? -ne 0 ] && exit 1
     
     local geo_rules="$(cat "${geotype}-${geoitem}.json")"
     
     result="$(rule_json_addition "$result" "$geo_rules")"
-    rm "${geotype}-${geoitem}.json"
+    # donot delete "${geotype}-${geoitem}.json" since we may re-use
+    # rm "${geotype}-${geoitem}.json"
   done
   
   echo $result
@@ -161,21 +163,17 @@ build_rule_file()
 {
   local geotype="$1"
   local rule_cfg="$2"
-  #mode: ['dryrun'|'srs'|'json'|'both']
+  #mode: ['dryrun'|'json'|'srs']
   local mode='$3'
-  
-  [ "$mode" == "" ] && mode='srs'
-  if [ "$mode" == "srs" ]; then
-    [ "$DEBUG" == "1" ] || [[ "${custom_ruleset_resc[@]}" =~ "$rule_cfg" ]] && mode='both'
-  fi
+  [ "$mode" == '' ] && mode='srs'
   
   
   local filename="$(echo "$rule_cfg" | jq -r '.tag')"
   if [ "$filename" == "null" ]; then
-    echo "ip json file format wrong: no tag/filename"
+    echo "ip json file format wrong: no tag/filename" >&2
     exit 1
   fi
-  echo "building ${filename}.srs"
+  [ "$DEBUG" == "1" ] && echo "building ${filename}.srs"
 
   local geo_list="$(echo "$rule_cfg" | jq ".rules.${geotype}")"
    #[ $? -ne 0 ] && >&2 echo "Err: does not contain rules.${geotype} field in .json" && exit 1
@@ -188,16 +186,21 @@ build_rule_file()
   
   local result="$(rule_json_addition "$geo_rules" "$other_rules")"
   
-  
-  if [ "$mode" != 'dryrun' ]; then
-    echo "${result}" > "./${filename}.json"
-    [ "$mode" != 'json' ] && $singbox rule-set compile "${filename}.json"
-    [ "$mode" == 'srs' ] && rm "${filename}.json"
-    
-    [ -f "./${filename}.json" ] && echo "${filename}.json is built"
-    [ -f "./${filename}.srs" ] && echo "${filename}.srs is built"
-  elif [ "$mode" == 'dryrun' ]; then
+  if [ "$mode" == 'dryrun' ]; then
     echo $result
+  elif [ "$mode" != 'dryrun' ]; then
+    echo "${result}" > "./${filename}.json"
+    if [ ! -s "./${filename}.json" ]; then
+      echo "build ${filename}.json failed" >&2
+    elif  [ "$mode" == 'json' ] || [ "$DEBUG" == "1" ]; then
+      echo "${filename}.json is built"
+    fi
+    
+    if [ "$mode" == 'srs' ]; then
+      [ "$DEBUG" == "1" ] && echo "building ${filename}.srs"
+      $singbox rule-set compile "${filename}.json"
+      [ -s "./${filename}.srs" ] && echo "${filename}.srs is built" || echo "build ${filename}.srs failed" >&2
+    fi
   fi
 }
 
@@ -218,44 +221,45 @@ build_filtered_ruleset()
   [[ "${2}" == "site"* ]] && ruletag2="${2}" || ruletag2="geosite_${2}"
   ruletag_result="geosite_${3}"
   
-  if [ ! -f "${ruletag1}.json" ]; then
+  if [ ! -s "${ruletag1}.json" ]; then
     local cfg1="{\"tag\": \"${ruletag1}\", \"rules\": {\"geosite\": [\"${1}\"]}}"
     build_rule_file 'geosite' "$cfg1" 'json'
   fi
-  if [ ! -f "${ruletag2}.json" ]; then
+  if [ ! -s "${ruletag2}.json" ]; then
     local cfg2="{\"tag\": \"${ruletag2}\", \"rules\": {\"geosite\": [\"${2}\"]}}"
     build_rule_file 'geosite' "$cfg2" 'json'
   fi
-  
   
   echo "building ${ruletag_result}.srs"
   rule1="$(cat "${ruletag1}.json")"
   rule2="$(cat "${ruletag2}.json")"
   rule_json_subtraction "$rule1" "$rule2" > "${ruletag_result}.json"
-  [ -f "${ruletag_result}.json" ] && echo "${ruletag_result}.json is built"
+  [ -s "${ruletag_result}.json" ] && echo "${ruletag_result}.json is built" || echo "build ${ruletag_result}.json failed" >&2
 }
 
 build_customized_ruleset()
 {
-  local custom_ruleset=''
-  local result=''
-  
+## TODO: optimize rule-sets, by removing contents already checked
+<< TEMP
   # custom_ruleset #1
   # removes geosite:microsoft from geosite:geolocation-!cn
   # creates a new ruleset [geosite_!cn_filter~microsoft.srs] as result
-  custom_ruleset1='!cn_filter~microsoft'
+  local custom_ruleset1='!cn_filter~microsoft'
   build_filtered_ruleset 'geolocation-!cn' 'microsoft' "${custom_ruleset1}"
+  [ "$DEBUG" == "1" ] && echo "building geosite_${custom_ruleset1}.srs"
   $singbox rule-set compile "geosite_${custom_ruleset1}.json"
 
   # custom_ruleset #2
   # removes geosite:google-cn from sites2-new_direct(->contains geosite:cn ->contains geosite:google-cn)
   # changes the result to be the new&modified [sites2-new_direct.srs]
-  custom_ruleset2='direct_filter~google-cn'
+  local custom_ruleset2='direct_filter~google-cn'
   build_filtered_ruleset 'sites2-new_direct' 'google-cn' "${custom_ruleset2}"
+  [ "$DEBUG" == "1" ] && echo "geosite_${custom_ruleset2}.srs"
   $singbox rule-set compile "geosite_${custom_ruleset2}.json"
   rm "sites2-new_direct.srs"
   mv "geosite_${custom_ruleset2}.srs" "sites2-new_direct.srs"
-  
+TEMP
+
   # custom_ruleset #3
 }
 
