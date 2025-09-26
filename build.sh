@@ -6,7 +6,7 @@ cfg_ips=$1
 cfg_sites=$2
 
 #singvers: to avoid bugs in latest release of sing-box, only use the versions we verified to work
-singvers=('1.10.7' '1.10.5' '1.10.3')
+singvers=('1.11.15' '1.10.7' '1.10.5' '1.10.3')
 empty_ruleset='{"version": 2, "rules": [{}]}'
 custom_ruleset_resc=('geolocation-!cn' 'microsoft' 'sites2-new_direct')
 singbox=''
