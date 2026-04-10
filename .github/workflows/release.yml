@@ -41,7 +41,7 @@ jobs:
           
           if [ "${IP_CONF_LINK}" == '' ] || [ "${IP_CONF_LINK}" == 'null' ] || [ "${SITE_CONF_LINK}" == '' ] || [ "${SITE_CONF_LINK}" == 'null' ]; then
             echo "ip_conf_file='./config/dest_ip_sets.json'" >> "$GITHUB_OUTPUT"
-            echo "site_conf_filee='./config/dest_site_sets.json'" >> "$GITHUB_OUTPUT"
+            echo "site_conf_file='./config/dest_site_sets.json'" >> "$GITHUB_OUTPUT"
           else
             echo "ip_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${IP_CONF_LINK})" >> "$GITHUB_OUTPUT"
             echo "site_conf_file=$(curl -s -J -O -w '%{filename_effective}' ${SITE_CONF_LINK})" >> "$GITHUB_OUTPUT"
